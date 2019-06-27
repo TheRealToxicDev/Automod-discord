@@ -67,6 +67,10 @@ Sets the modrole. Everyone with this role can control the bot.
 
 Shows the current modrole
 
+> !am settings modrole exempt [true | false]
+
+Makes the modrole (not) exempt from punishments
+
 > !am settings threshold 1-99
 
 This defines how confident the bot has to be that a message is toxic in order to classify it as such. Default is 85%
