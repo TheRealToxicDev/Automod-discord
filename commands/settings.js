@@ -19,7 +19,39 @@ module.exports = {
                         db.close()
 
                         return message.channel.send("The mod role has been removed.").catch(console.error)
-                    } 
+                    } else if (args[1] == "exempt") {
+                        if (args[2]) {
+                            if (args[2] == "true" || args[2] == "false") {
+                                const value = args[2] == "true" ? 1 : 0
+
+                                if (memDB[message.guild.id].settings.modRoleExempt && value) {
+                                    return message.channel.send("Modrole is already exempt").catch(console.error)
+                                } else if (!memDB[message.guild.id].settings.modRoleExempt && !value) {
+                                    return message.channel.send("Modrole is already not exempt").catch(console.error)
+                                }
+
+                                memDB[message.guild.id].settings.modRoleExempt = value
+
+                                const db = new Database("am.db", { fileMustExist: true })
+
+                                db.prepare("UPDATE server_settings SET modRoleExempt = ? WHERE serverID = ?").run(value, message.guild.id)
+
+                                db.close()
+
+                                const word = args[2] == "true" ? "" : " not"
+
+                                return message.channel.send("Modrole is now" + word + " exempt from punishment").catch(console.error)
+                            } else {
+                                return message.channel.send("Usage: `!am settings modrole exempt [true | false]`").catch(console.error)
+                            }
+                        } else {
+                            if (memDB[message.guild.id].settings.modRoleExempt) {
+                                return message.channel.send("Modrole is exempt from punishment").catch(console.error)
+                            } else {
+                                return message.channel.send("Modrole is not exempt from punishment").catch(console.error)
+                            }
+                        }
+                    }
 
                     if (message.mentions.roles.size != 1) {
                         return message.channel.send("Please specify one mod role.").catch(console.error)
