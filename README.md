@@ -69,7 +69,7 @@ Shows the current modrole
 
 > !am settings modrole exempt [true | false]
 
-Makes the modrole (not) exempt from punishments
+Makes the modrole (not) exempt from punishments, default is false
 
 > !am settings modrole exempt
 
