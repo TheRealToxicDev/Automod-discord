@@ -71,6 +71,10 @@ Shows the current modrole
 
 Makes the modrole (not) exempt from punishments
 
+> !am settings modrole exempt
+
+Shows the current settings for modrole exempt
+
 > !am settings threshold 1-99
 
 This defines how confident the bot has to be that a message is toxic in order to classify it as such. Default is 85%
