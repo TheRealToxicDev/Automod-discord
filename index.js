@@ -15,7 +15,7 @@ for (const file of commandFiles) {
 
 const db = new Database("am.db", { fileMustExist: true })
 
-const stmt = db.prepare("SELECT serverID, threshold, modRole, loggingChannel, muteRole, muteDuration, deleted, temp_mute, kick, softban, ban, identity_attack, insult, obscene, severe_toxicity, sexual_explicit, threat, toxicity FROM server_settings").all()
+const stmt = db.prepare("SELECT serverID, threshold, modRole, modRoleExempt, loggingChannel, muteRole, muteDuration, deleted, temp_mute, kick, softban, ban, identity_attack, insult, obscene, severe_toxicity, sexual_explicit, threat, toxicity FROM server_settings").all()
 const stmt2 = db.prepare("SELECT serverID, channelID, am_enabled FROM data").all()
 const stmt3 = db.prepare("SELECT serverID, userID, total_infractions, deleted, temp_mute, kick, softban, ban FROM user_data").all()
 const stmt4 = db.prepare("SELECT serverID, userID, deleted, temp_mute, kick, softban, ban FROM user_data_internal").all()
@@ -42,7 +42,7 @@ for (const row of stmt) {
     deleted, temp_mute, kick, softban and ban are values that specify after how many total infractions an action should be executed, default is 0 for deleted and -1 for everything else, a value of 0 means instanly, a value of -1 means never
     Everything after that is the setting for a tag, if its true that means only messages that get classified with this tag get deleted, default is false
     */
-    memDB[row.serverID].settings = {threshold: row.threshold, modRole: row.modRole, loggingChannel: row.loggingChannel, muteRole: row.muteRole, muteDuration: row.muteDuration, deleted: row.deleted, temp_mute: row.temp_mute, kick: row.kick, softban: row.softban, ban: row.ban, identity_attack: row.identity_attack, insult: row.insult, obscene: row.obscene, severe_toxicity: row.severe_toxicity, sexual_explicit: row.sexual_explicit, threat: row.threat, toxicity: row.toxicity}
+    memDB[row.serverID].settings = {threshold: row.threshold, modRole: row.modRole, modRoleExempt: row.modRoleExempt, loggingChannel: row.loggingChannel, muteRole: row.muteRole, muteDuration: row.muteDuration, deleted: row.deleted, temp_mute: row.temp_mute, kick: row.kick, softban: row.softban, ban: row.ban, identity_attack: row.identity_attack, insult: row.insult, obscene: row.obscene, severe_toxicity: row.severe_toxicity, sexual_explicit: row.sexual_explicit, threat: row.threat, toxicity: row.toxicity}
 }
 
 for (const row of stmt2) {
@@ -83,7 +83,7 @@ client.on("ready", () => {
             memDB[guild.id] = {}
             memDB[guild.id].user_data = {}
             memDB[guild.id].user_data_internal = {}
-            memDB[guild.id].settings = {threshold: 0.85, modRole: null, loggingChannel: null, muteRole: null, muteDuration: 0, deleted: 0, temp_mute: null, kick: null, softban: null, ban: null, identity_attack: false, insult: false, obscene: false, severe_toxicity: false, sexual_explicit: false, threat: false, toxicity: false}
+            memDB[guild.id].settings = {threshold: 0.85, modRole: null, modRoleExempt: false, loggingChannel: null, muteRole: null, muteDuration: 0, deleted: 0, temp_mute: null, kick: null, softban: null, ban: null, identity_attack: false, insult: false, obscene: false, severe_toxicity: false, sexual_explicit: false, threat: false, toxicity: false}
 
             const db = new Database("am.db", { fileMustExist: true })
 
@@ -149,7 +149,7 @@ client.on("roleDelete", role => {
 })
 
 client.on("guildCreate", guild => {
-    memDB[guild.id] = {settings: {threshold: 0.85, modRole: null, loggingChannel: null, muteRole: null, muteDuration: 0, deleted: 0, temp_mute: null, kick: null, softban: null, ban: null, identity_attack: false, insult: false, obscene: false, severe_toxicity: false, sexual_explicit: false, threat: false, toxicity: false}}
+    memDB[guild.id] = {settings: {threshold: 0.85, modRole: null, modRoleExempt: false, loggingChannel: null, muteRole: null, muteDuration: 0, deleted: 0, temp_mute: null, kick: null, softban: null, ban: null, identity_attack: false, insult: false, obscene: false, severe_toxicity: false, sexual_explicit: false, threat: false, toxicity: false}}
 
     const db = new Database("am.db", { fileMustExist: true })
 
@@ -212,6 +212,8 @@ client.on("message", async message => {
 
     if (!memDB[message.guild.id] || !memDB[message.guild.id][message.channel.id] || !memDB[message.guild.id][message.channel.id].am_enabled) return
 
+    if (memDB[message.guild.id].settings.modRoleExempt && message.member.roles.has(memDB[message.guild.id].settings.modRole)) return
+
     classifier(message, memDB)
     .then(result => {
         function tagDelete(result) {
@@ -230,7 +232,7 @@ client.on("message", async message => {
         } else {
             if (result[6].results.match) {
                 punishment(message)
-            }  
+            }
         }
     })
     .catch(console.error)
