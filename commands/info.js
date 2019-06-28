@@ -14,7 +14,7 @@ module.exports = {
                     if (message.mentions.users > 1) {
                         return message.channel.send("You can only reset info on one user.").catch(console.error)
                     } else if (!userMentioned && !/[0-9]+/.test(args[1])) {
-                        return message.channel.send("Usage: !am info reset [@user OR userID]").catch(console.error)
+                        return message.channel.send("Usage: `!am info reset [@user OR userID]`").catch(console.error)
                     }
 
                     if (userMentioned) {
@@ -57,13 +57,11 @@ module.exports = {
                             memDB[message.guild.id].user_data[args[1]].softban = 0
                             memDB[message.guild.id].user_data[args[1]].ban = 0
 
-                            if (memDB[message.guild.id].user_data_internal[args[1]]) {
-                                memDB[message.guild.id].user_data_internal[args[1]].deleted = 0
-                                memDB[message.guild.id].user_data_internal[args[1]].temp_mute = 0
-                                memDB[message.guild.id].user_data_internal[args[1]].kick = 0
-                                memDB[message.guild.id].user_data_internal[args[1]].softban = 0
-                                memDB[message.guild.id].user_data_internal[args[1]].ban = 0
-                            }
+                            memDB[message.guild.id].user_data_internal[args[1]].deleted = 0
+                            memDB[message.guild.id].user_data_internal[args[1]].temp_mute = 0
+                            memDB[message.guild.id].user_data_internal[args[1]].kick = 0
+                            memDB[message.guild.id].user_data_internal[args[1]].softban = 0
+                            memDB[message.guild.id].user_data_internal[args[1]].ban = 0
 
                             const db = new Database("am.db", { fileMustExist: true })
 
@@ -85,7 +83,7 @@ module.exports = {
                     if (message.mentions.users > 1) {
                         return message.channel.send("You can only get info on one user.").catch(console.error)
                     } else if (!userMentioned && !/[0-9]+/.test(args[0])) {
-                        return message.channel.send("Usage: !am info [@user OR userID]").catch(console.error)
+                        return message.channel.send("Usage: `!am info [@user OR userID]`").catch(console.error)
                     }
 
                     if (userMentioned) {
