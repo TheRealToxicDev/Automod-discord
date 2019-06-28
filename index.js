@@ -78,6 +78,7 @@ client.login(config.token)
 client.on("ready", () => {
     console.log("Logged in")
 
+    // This makes sure that we create objects for servers which were joined while the bot was off
     client.guilds.forEach(guild => {
         if (!Object.prototype.hasOwnProperty.call(memDB, guild.id)) {
             memDB[guild.id] = {}
@@ -99,6 +100,8 @@ client.on("ready", () => {
 
     db.close()
 
+    // In case the bot muted a user and went offline this either unmutes the user if the mute duration is over or sets a new timeout
+    // that way we can make sure we don't accidentally mute a user indefinitely
     if (stmt.length) {
         for (const row of stmt) {
             if (new Date().getTime() - row.muted_at >= row.duration) {
@@ -127,6 +130,7 @@ client.on("ready", () => {
 })
 
 client.on("roleDelete", role => {
+    // This sets mod roles or mute roles back to null if they get deleted to make sure we don't have old data in the db
     if (memDB[role.guild.id].settings.modRole == role.id) {
         memDB[role.guild.id].settings.modRole = null
 
@@ -195,7 +199,7 @@ client.on("channelDelete", channel => {
     }
 })
 
-client.on("message", async message => {
+client.on("message", message => {
     if (message.author.bot || message.channel.type != "text") return
 
     if (message.content.startsWith(config.prefix)) {
@@ -210,24 +214,13 @@ client.on("message", async message => {
         }
     }
 
-    if (!memDB[message.guild.id] || !memDB[message.guild.id][message.channel.id] || !memDB[message.guild.id][message.channel.id].am_enabled) return
+    if (!memDB[message.guild.id][message.channel.id] || !memDB[message.guild.id][message.channel.id].am_enabled) return
 
     if (memDB[message.guild.id].settings.modRoleExempt && message.member.roles.has(memDB[message.guild.id].settings.modRole)) return
 
     classifier(message, memDB)
     .then(result => {
-        function tagDelete(result) {
-            if (memDB[message.guild.id].settings.identity_attack && result[0].results.match) return true
-            if (memDB[message.guild.id].settings.insult && result[1].results.match) return true
-            if (memDB[message.guild.id].settings.obscene && result[2].results.match) return true
-            if (memDB[message.guild.id].settings.severe_toxicity && result[3].results.match) return true
-            if (memDB[message.guild.id].settings.sexual_explicit && result[4].results.match) return true
-            if (memDB[message.guild.id].settings.threat && result[5].results.match) return true
-            if (memDB[message.guild.id].settings.toxicity && result[6].results.match) return true
-            return false
-        }
-
-        if (tagDelete(result)) {
+        if (tagDelete(message, result)) {
             punishment(message)
         } else {
             if (result[6].results.match) {
@@ -237,6 +230,17 @@ client.on("message", async message => {
     })
     .catch(console.error)
 })
+
+function tagDelete(message, result) {
+    if (memDB[message.guild.id].settings.identity_attack && result[0].results.match) return true
+    if (memDB[message.guild.id].settings.insult && result[1].results.match) return true
+    if (memDB[message.guild.id].settings.obscene && result[2].results.match) return true
+    if (memDB[message.guild.id].settings.severe_toxicity && result[3].results.match) return true
+    if (memDB[message.guild.id].settings.sexual_explicit && result[4].results.match) return true
+    if (memDB[message.guild.id].settings.threat && result[5].results.match) return true
+    if (memDB[message.guild.id].settings.toxicity && result[6].results.match) return true
+    return false
+}
 
 function punishment(message) {
     if (!memDB[message.guild.id].user_data[message.author.id]) {
@@ -281,7 +285,7 @@ function punishment(message) {
     }
 
     if (memDB[message.guild.id].settings.temp_mute != null && memDB[message.guild.id].user_data_internal[message.author.id].temp_mute >= memDB[message.guild.id].settings.temp_mute) {
-        if (memDB[message.guild.id].settings.muteRole && !message.member.roles.has(memDB[message.guild.id].settings.muteRole)) {
+        if (!message.member.roles.has(memDB[message.guild.id].settings.muteRole)) {
             message.member.addRole(memDB[message.guild.id].settings.muteRole)
             .catch(console.error)
 
@@ -331,7 +335,7 @@ function punishment(message) {
 
     if (memDB[message.guild.id].settings.softban != null && memDB[message.guild.id].user_data_internal[message.author.id].softban >= memDB[message.guild.id].settings.softban) {
         message.member.ban()
-        .then(() => message.guild.unban(client.fetchUser(message.author.id)))
+        .then(() => message.guild.unban(message.author.id))
         .catch(console.error)
 
         memDB[message.guild.id].user_data[message.author.id].softban++
