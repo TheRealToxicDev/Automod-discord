@@ -219,7 +219,7 @@ module.exports = {
 
                         db.close()
 
-                        if (args[2]) {
+                        if (!value2) {
                             message.channel.send(args[1] + " has been set to off")
                             .catch(console.error)
                         } else {
