@@ -209,7 +209,7 @@ module.exports = {
                         }
 
                         const value = args[1] == "delete" ? "deleted" : args[1]
-                        const value2 = /[^0-9]/.test(args[2]) ? null : args[2]
+                        const value2 = args[2] == "off" ? null : args[2]
 
                         memDB[message.guild.id].settings[value] = value2
 
@@ -219,8 +219,13 @@ module.exports = {
 
                         db.close()
 
-                        message.channel.send(args[1] + " has been set to " + args[2] + " make sure that the bot has the right permissions or nothing will happen (even though it will still log that it did it).")
-                        .catch(console.error)
+                        if (args[2]) {
+                            message.channel.send(args[1] + " has been set to off")
+                            .catch(console.error)
+                        } else {
+                            message.channel.send(args[1] + " has been set to " + args[2] + " make sure that the bot has the right permissions or nothing will happen (even though it will still log that it did it).")
+                            .catch(console.error)
+                        }
                     } else {
                         message.channel.send(new Discord.RichEmbed()
                         .setColor('#0099ff')
