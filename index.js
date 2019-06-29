@@ -334,7 +334,7 @@ function punishment(message) {
     }
 
     if (memDB[message.guild.id].settings.softban != null && memDB[message.guild.id].user_data_internal[message.author.id].softban >= memDB[message.guild.id].settings.softban) {
-        message.member.ban(365)
+        message.member.ban(7)
         .then(() => message.guild.unban(message.author.id))
         .catch(console.error)
 
