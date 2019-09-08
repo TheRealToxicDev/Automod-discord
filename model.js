@@ -29,7 +29,7 @@ class TrieNode {
     }
 
     getWord() {
-        let output = []
+        const output = []
         let node = this
         while (node !== null) {
             if (node.key !== null) {
@@ -77,7 +77,7 @@ class Trie {
 
     commonPrefixSearch(ss) {
         const node = this.root.children[ss[0]]
-        let output = []
+        const output = []
         if (node) {
             this.findAllCommonPrefixes(ss, node, output)
         } else {
@@ -88,7 +88,7 @@ class Trie {
 }
 
 function stringToChars(input) {
-    let symbols = []
+    const symbols = []
     for (let i = 0; i < input.length; i++) {
         symbols.push(input[i])
     }
@@ -110,9 +110,9 @@ class Tokenizer {
     }
 
     encode(input) {
-        let nodes = []
-        let words = []
-        let best = []
+        const nodes = []
+        const words = []
+        const best = []
         input = processInput(input)
         const symbols = stringToChars(input)
         for (let i = 0; i <= symbols.length; i++) {
@@ -145,13 +145,13 @@ class Tokenizer {
                 }
             }
         }
-        let results = []
+        const results = []
         let iter = words.length - 1
         while (iter > 0) {
             results.push(words[iter])
             iter -= this.vocabulary[words[iter]][0].length
         }
-        let merged = []
+        const merged = []
         let isPreviousUnk = false
         for (let i = 0; i < results.length; i++) {
             const id = results[i]
@@ -165,7 +165,7 @@ class Tokenizer {
 }
 
 module.exports = (message, memDB) => {
-    const result = new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         const a = {}
         a.labels = model.outputs.map(d => { return d.name.split("/")[0] })
         a.toxicityLabels = a.labels
@@ -197,6 +197,4 @@ module.exports = (message, memDB) => {
 
         resolve(result)
     })
-
-    return result
 }

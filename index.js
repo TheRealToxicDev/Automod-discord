@@ -24,7 +24,7 @@ db.close()
 
 // I'm using memDB so i don't have to access the db every time i have to check something
 // Arguably not the best solution but it works for now
-let memDB = {}
+const memDB = {}
 
 for (const row of stmt) {
     if (!Object.prototype.hasOwnProperty.call(memDB, row.serverID)) {
