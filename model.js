@@ -5,26 +5,20 @@ Massive thank you to tensorflow for open sourcing the code and letting us use it
 
 const tf = require("@tensorflow/tfjs-node")
 
-let model = async () => {
+let model = (async function() {
     console.log("Loading Toxicity Model")
-    const toxicity = await tf.loadGraphModel("https://storage.googleapis.com/tfjs-models/savedmodel/toxicity/model.json")
+    model = await tf.loadGraphModel("https://storage.googleapis.com/tfjs-models/savedmodel/toxicity/model.json")
     console.log("Loaded Toxicity Model")
-    model = toxicity
-}
+})()
 
-let tokenizer = async () => {
+let tokenizer = (function() {
     console.log("Loading USE Model")
-    let vocabulary = await tf.util.fetch("https://storage.googleapis.com/tfjs-models/savedmodel/universal_sentence_encoder/vocab.json")
-    vocabulary = vocabulary.json()
+    tf.util.fetch("https://storage.googleapis.com/tfjs-models/savedmodel/universal_sentence_encoder/vocab.json").json()
     .then(vocabulary => {
-        const tn = new Tokenizer(vocabulary)
-        tokenizer = tn
+        tokenizer = new Tokenizer(vocabulary)
         console.log("Loaded USE Model")
     })
-}
-
-model()
-tokenizer()
+})()
 
 class TrieNode {
     constructor(key) {
@@ -33,6 +27,7 @@ class TrieNode {
         this.children = {}
         this.end = false
     }
+
     getWord() {
         let output = []
         let node = this
@@ -50,10 +45,11 @@ class Trie {
     constructor() {
         this.root = new TrieNode(null)
     }
+
     findAllCommonPrefixes(ss, node, arr) {
         if (node.end) {
             const word = node.getWord()
-            if (ss.slice(0, word[0].length).join('') === word[0].join('')) {
+            if (ss.slice(0, word[0].length).join("") === word[0].join("")) {
                 arr.unshift(word)
             }
         }
@@ -61,6 +57,7 @@ class Trie {
             this.findAllCommonPrefixes(ss, node.children[child], arr)
         }
     }
+
     insert(word, score, index) {
         let node = this.root
         const symbols = stringToChars(word)
@@ -77,13 +74,13 @@ class Trie {
             }
         }
     }
+
     commonPrefixSearch(ss) {
         const node = this.root.children[ss[0]]
         let output = []
         if (node) {
             this.findAllCommonPrefixes(ss, node, output)
-        }
-        else {
+        } else {
             output.push([[ss[0]], 0, 0])
         }
         return output
@@ -99,7 +96,7 @@ function stringToChars(input) {
 }
 
 function processInput(input) {
-    const normalized = input.normalize('NFKC')
+    const normalized = input.normalize("NFKC")
     return "\u2581" + normalized.replace(/ /g, "\u2581")
 }
 
@@ -111,6 +108,7 @@ class Tokenizer {
             this.trie.insert(this.vocabulary[i][0], this.vocabulary[i][1], i)
         }
     }
+
     encode(input) {
         let nodes = []
         let words = []
@@ -169,33 +167,34 @@ class Tokenizer {
 module.exports = (message, memDB) => {
     const result = new Promise(async (resolve, reject) => {
         const a = {}
-        a.labels = model.outputs.map(function (d) { return d.name.split('/')[0] })
+        a.labels = model.outputs.map(d => { return d.name.split("/")[0] })
         a.toxicityLabels = a.labels
 
         const inputs = [message.content]
-        const encodings = inputs.map((d) => { return tokenizer.encode(d) })
+        const encodings = inputs.map(d => { return tokenizer.encode(d) })
         const indicesArr = encodings.map((arr, i) => { return arr.map((d, index) => { return [i, index] }) })
         let flattenedIndicesArr = []
         for (let i = 0; i < indicesArr.length; i++) {
             flattenedIndicesArr = flattenedIndicesArr.concat(indicesArr[i])
         }
-        const indices = tf.tensor2d(flattenedIndicesArr, [flattenedIndicesArr.length, 2], 'int32')
-        const values = tf.tensor1d(tf.util.flatten(encodings), 'int32')
-        const labels = await model.executeAsync({ Placeholder_1: indices, Placeholder: values }).catch(err => reject(err))
+        const indices = tf.tensor2d(flattenedIndicesArr, [flattenedIndicesArr.length, 2], "int32")
+        const values = tf.tensor1d(tf.util.flatten(encodings), "int32")
+        const labels = await model.executeAsync({ Placeholder_1: indices, Placeholder: values }) // Test if you can remove this await
         indices.dispose()
         values.dispose()
 
-        const result = labels.map((d, i) => { return ({ data: d, headIndex: i }) })
-            .filter((d) => { return a.toxicityLabels.indexOf(a.labels[d.headIndex]) > -1
-        }).map((d) => {
-            const prediction = d.data.dataSync()
-            const threshold = memDB[message.guild.id].settings.threshold
-            let match = false
-            if (Math.max(prediction[0], prediction[1]) > threshold) {
-                match = prediction[0] < prediction[1]
-            }
-            return { label: a.labels[d.headIndex], results: { probabilities: prediction, match: match } }
-        })
+        const result = labels.map((d, i) => { return { data: d, headIndex: i } })
+            .filter(d => { return a.toxicityLabels.indexOf(a.labels[d.headIndex]) > -1 })
+            .map(d => {
+                const prediction = d.data.data() // Test if dataSync() is needed
+                const threshold = memDB[message.guild.id].settings.threshold
+                let match = false
+                if (Math.max(prediction[0], prediction[1]) > threshold) {
+                    match = prediction[0] < prediction[1]
+                }
+                return { label: a.labels[d.headIndex], results: { probabilities: prediction, match: match } }
+            })
+
         resolve(result)
     })
 
