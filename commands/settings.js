@@ -5,6 +5,7 @@ function hasModrole(message, memDB) {
 
 module.exports = {
     name: "settings",
+    // eslint-disable-next-line complexity
     execute(memDB, Database, Discord, message, args) {
         if (hasModrole(message, memDB) || message.author.id == message.guild.ownerID) {
             if (args[0] == "modrole") {
@@ -41,21 +42,21 @@ module.exports = {
                                 const word = args[2] == "true" ? "" : " not"
 
                                 return message.channel.send("Modrole is now" + word + " exempt from punishment").catch(console.error)
-                            } else {
-                                return message.channel.send("Usage: `!am settings modrole exempt [true | false]`").catch(console.error)
                             }
-                        } else {
-                            if (memDB[message.guild.id].settings.modRoleExempt) {
-                                return message.channel.send("Modrole is exempt from punishment").catch(console.error)
-                            } else {
-                                return message.channel.send("Modrole is not exempt from punishment").catch(console.error)
-                            }
+
+                            return message.channel.send("Usage: `!am settings modrole exempt [true | false]`").catch(console.error)
                         }
+
+                        if (memDB[message.guild.id].settings.modRoleExempt) {
+                            return message.channel.send("Modrole is exempt from punishment").catch(console.error)
+                        }
+
+                        return message.channel.send("Modrole is not exempt from punishment").catch(console.error)
                     }
 
                     if (message.mentions.roles.size != 1) {
                         return message.channel.send("Please specify one mod role.").catch(console.error)
-                    } else if (!/(<@&[0-9]+>)/.test(args[1])) {
+                    } else if (!/(?<roleMention><@&[0-9]+>)/.test(args[1])) {
                         return message.channel.send("Usage: `!am settings modrole @modrole`").catch(console.error)
                     }
 
@@ -141,7 +142,7 @@ module.exports = {
                     value()
 
                     message.channel.send(new Discord.RichEmbed()
-                    .setColor('#0099ff')
+                    .setColor("#0099ff")
                     .setTitle("Tags")
                     .addField("Identity attack", value[0])
                     .addField("Insult", value[1])
@@ -166,14 +167,14 @@ module.exports = {
 
                             return message.channel.send("Logging has been disabled.")
                             .catch(console.error)
-                        } else {
-                            return message.channel.send("Logging is already disabled.")
-                            .catch(console.error)
                         }
+
+                        return message.channel.send("Logging is already disabled.")
+                        .catch(console.error)
                     }
 
                     if (message.mentions.channels.size != 1) return message.channel.send("Please mention one logging channel.").catch(console.error)
-                    if (!/(<#[0-9]+>)/.test(args[1])) return message.channel.send("Usage: !am settings log #channelname").catch(console.error)
+                    if (!/(?<channelMention><#[0-9]+>)/.test(args[1])) return message.channel.send("Usage: !am settings log #channelname").catch(console.error)
 
                     memDB[message.guild.id].settings.loggingChannel = message.mentions.channels.first().id
 
@@ -228,13 +229,13 @@ module.exports = {
                         }
                     } else {
                         message.channel.send(new Discord.RichEmbed()
-                        .setColor('#0099ff')
+                        .setColor("#0099ff")
                         .setDescription("`delete`\n`temp_mute`\n`kick`\n`softban`\n`ban`")
                         ).catch(console.error)
                     }
                 } else {
                     message.channel.send(new Discord.RichEmbed()
-                    .setColor('#0099ff')
+                    .setColor("#0099ff")
                     .setTitle("Values")
                     .addField("Delete", memDB[message.guild.id].settings.deleted != null ? memDB[message.guild.id].settings.deleted : "off")
                     .addField("Temp mute", memDB[message.guild.id].settings.temp_mute != null ? memDB[message.guild.id].settings.temp_mute : "off")
@@ -248,7 +249,7 @@ module.exports = {
                     if (message.mentions.roles.size != 1) {
                         return message.channel.send("Please specify one muterole.")
                         .catch(console.error)
-                    } else if (!/(<@&[0-9]+>)/.test(args[1])) {
+                    } else if (!/(?<roleMention><@&[0-9]+>)/.test(args[1])) {
                         return message.channel.send("Usage: `!am settings muterole @muterole`")
                         .catch(console.error)
                     }
