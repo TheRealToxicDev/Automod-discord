@@ -12,6 +12,11 @@ The bot is highly configurable. You can specify what punishment a user should re
 
 **I currently have no publicly available version of this bot running. If you want to have this bot on your server please host it yourself or ask someone who hosts an instance of this bot to invite it to your server.**
 
+## Errors
+
+#####I'm getting errors related to tfjs-node
+Please try to remove special characters like `-` or ` ` (space) from your directory path before making an issue.
+
 ## Hosting
 
 If you want to host this bot follow the instructions below.

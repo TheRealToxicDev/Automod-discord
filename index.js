@@ -199,7 +199,7 @@ client.on("channelDelete", channel => {
     }
 })
 
-client.on("message", message => {
+client.on("message", async message => {
     if (message.author.bot || message.channel.type != "text") return
 
     if (message.content.startsWith(config.prefix)) {
@@ -218,27 +218,24 @@ client.on("message", message => {
 
     if (memDB[message.guild.id].settings.modRoleExempt && message.member.roles.has(memDB[message.guild.id].settings.modRole)) return
 
-    classifier(message, memDB)
-    .then(result => {
-        if (tagDelete(message, result)) {
+    const result = await Promise.all(await classifier(message, memDB)).catch(console.error)
+    if (tagDelete(message, result)) {
+        punishment(message)
+    } else {
+        if (result[6].match) {
             punishment(message)
-        } else {
-            if (result[6].results.match) {
-                punishment(message)
-            }
         }
-    })
-    .catch(console.error)
+    }
 })
 
 function tagDelete(message, result) {
-    if (memDB[message.guild.id].settings.identity_attack && result[0].results.match) return true
-    if (memDB[message.guild.id].settings.insult && result[1].results.match) return true
-    if (memDB[message.guild.id].settings.obscene && result[2].results.match) return true
-    if (memDB[message.guild.id].settings.severe_toxicity && result[3].results.match) return true
-    if (memDB[message.guild.id].settings.sexual_explicit && result[4].results.match) return true
-    if (memDB[message.guild.id].settings.threat && result[5].results.match) return true
-    if (memDB[message.guild.id].settings.toxicity && result[6].results.match) return true
+    if (memDB[message.guild.id].settings.identity_attack && result[0].match) return true
+    if (memDB[message.guild.id].settings.insult && result[1].match) return true
+    if (memDB[message.guild.id].settings.obscene && result[2].match) return true
+    if (memDB[message.guild.id].settings.severe_toxicity && result[3].match) return true
+    if (memDB[message.guild.id].settings.sexual_explicit && result[4].match) return true
+    if (memDB[message.guild.id].settings.threat && result[5].match) return true
+    if (memDB[message.guild.id].settings.toxicity && result[6].match) return true
     return false
 }
 

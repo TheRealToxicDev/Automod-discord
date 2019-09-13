@@ -13,11 +13,15 @@ let model = (async function() {
 
 let tokenizer = (function() {
     console.log("Loading USE Model")
-    tf.util.fetch("https://storage.googleapis.com/tfjs-models/savedmodel/universal_sentence_encoder/vocab.json").json()
+    tf.util.fetch("https://storage.googleapis.com/tfjs-models/savedmodel/universal_sentence_encoder/vocab.json")
+    .then(vocabulary => {
+        return vocabulary.json()
+    })
     .then(vocabulary => {
         tokenizer = new Tokenizer(vocabulary)
         console.log("Loaded USE Model")
     })
+    .catch(console.error)
 })()
 
 class TrieNode {
@@ -96,8 +100,7 @@ function stringToChars(input) {
 }
 
 function processInput(input) {
-    const normalized = input.normalize("NFKC")
-    return "\u2581" + normalized.replace(/ /g, "\u2581")
+    return "\u2581" + input.normalize("NFKC").replace(/ /g, "\u2581")
 }
 
 class Tokenizer {
@@ -169,32 +172,27 @@ module.exports = (message, memDB) => {
         const a = {}
         a.labels = model.outputs.map(d => { return d.name.split("/")[0] })
         a.toxicityLabels = a.labels
-
+        
         const inputs = [message.content]
         const encodings = inputs.map(d => { return tokenizer.encode(d) })
         const indicesArr = encodings.map((arr, i) => { return arr.map((d, index) => { return [i, index] }) })
-        let flattenedIndicesArr = []
-        for (let i = 0; i < indicesArr.length; i++) {
-            flattenedIndicesArr = flattenedIndicesArr.concat(indicesArr[i])
-        }
-        const indices = tf.tensor2d(flattenedIndicesArr, [flattenedIndicesArr.length, 2], "int32")
+        const indices = tf.tensor2d(indicesArr[0], [indicesArr[0].length, 2], "int32")
         const values = tf.tensor1d(tf.util.flatten(encodings), "int32")
-        const labels = await model.executeAsync({ Placeholder_1: indices, Placeholder: values }) // Test if you can remove this await
+        const labels = await model.executeAsync({ Placeholder_1: indices, Placeholder: values })
         indices.dispose()
         values.dispose()
-
+        
         const result = labels.map((d, i) => { return { data: d, headIndex: i } })
-            .filter(d => { return a.toxicityLabels.indexOf(a.labels[d.headIndex]) > -1 })
-            .map(d => {
-                const prediction = d.data.data() // Test if dataSync() is needed
-                const threshold = memDB[message.guild.id].settings.threshold
-                let match = false
-                if (Math.max(prediction[0], prediction[1]) > threshold) {
-                    match = prediction[0] < prediction[1]
-                }
-                return { label: a.labels[d.headIndex], results: { probabilities: prediction, match: match } }
-            })
-
+        .filter(d => { return a.toxicityLabels.indexOf(a.labels[d.headIndex]) > -1 })
+        .map(async d => {
+            let match = false
+            const prediction = await d.data.data()
+            if (Math.max(prediction[0], prediction[1]) > memDB[message.guild.id].settings.threshold) {
+                match = prediction[0] < prediction[1]
+            }
+            return { label: a.labels[d.headIndex], probabilities: prediction, match: match }
+        })
+        
         resolve(result)
     })
 }
