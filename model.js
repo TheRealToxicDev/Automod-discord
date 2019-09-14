@@ -169,13 +169,9 @@ class Tokenizer {
 
 module.exports = (message, memDB) => {
     return new Promise(async (resolve, reject) => {
-        const a = {}
-        a.labels = model.outputs.map(d => { return d.name.split("/")[0] })
-        a.toxicityLabels = a.labels
-        
-        const inputs = [message.content]
-        const encodings = inputs.map(d => { return tokenizer.encode(d) })
-        const indicesArr = encodings.map((arr, i) => { return arr.map((d, index) => { return [i, index] }) })
+        const a = { labels: model.outputs.map(d => { return d.name.split("/")[0] }) }
+        const encodings = [tokenizer.encode(message.content)]
+        const indicesArr = [encodings[0].map((d, index) => { return [0, index] })]
         const indices = tf.tensor2d(indicesArr[0], [indicesArr[0].length, 2], "int32")
         const values = tf.tensor1d(tf.util.flatten(encodings), "int32")
         const labels = await model.executeAsync({ Placeholder_1: indices, Placeholder: values })
@@ -183,7 +179,6 @@ module.exports = (message, memDB) => {
         values.dispose()
         
         const result = labels.map((d, i) => { return { data: d, headIndex: i } })
-        .filter(d => { return a.toxicityLabels.indexOf(a.labels[d.headIndex]) > -1 })
         .map(async d => {
             let match = false
             const prediction = await d.data.data()

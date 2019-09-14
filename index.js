@@ -117,9 +117,6 @@ client.on("ready", () => {
                     db.prepare("DELETE FROM muted_users WHERE serverID = ? AND userID = ?").run(row.serverID, row.userID)
 
                     db.close()
-                } else {
-                    const message = {guild: {id: row.serverID}, author: {id: row.userID}, member: client.guilds.get(row.serverID).members.get(row.userID)}
-                    setTimeout(removeMute, row.duration - (new Date().getTime() - row.muted_at), message, row.mute_role).unref()
                 }
             } else {
                 const message = {guild: {id: row.serverID}, author: {id: row.userID}, member: client.guilds.get(row.serverID).members.get(row.userID)}

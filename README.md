@@ -25,7 +25,7 @@ If you want to host this bot follow the instructions below.
 2. Set up a bot account
 3. Invite the bot to your server
 4. Add your token to the config.json file
-5. Install [Node.js](https://nodejs.org/en/download/)
+5. Install [Node.js](https://nodejs.org/en/download/current/)
 6. Install discord.js, better-sqlite3 and @tensorflow/tfjs-node packages
 
 If you don't know how to create a bot account, invite the bot to your server or where to get your token please follow this [Discord Bot 101 Guide](https://www.digitaltrends.com/gaming/how-to-make-a-discord-bot/) until step 4.
@@ -34,7 +34,7 @@ You should be good to go now. If you like you can use the profile picture i made
 
 ## Performance
 
-Average processing time of a message.
+Average processing time of a message. Calculated from 10 samples.
 
 |    Performance    |  Ryzen 5 2600  | Raspberry Pi 3b+ |
 | :---------------: | :------------: | :--------------: |
