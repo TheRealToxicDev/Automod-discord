@@ -218,21 +218,22 @@ client.on("message", async message => {
     const result = await Promise.all(await classifier(message, memDB)).catch(console.error)
     if (tagDelete(message, result)) {
         punishment(message)
-    } else {
-        if (result[6].match) {
-            punishment(message)
-        }
+    } else if (result[6].match) {
+        punishment(message)
     }
 })
 
+// In case a message should only be deleted if it contains a specific tag this checks for it
 function tagDelete(message, result) {
-    if (memDB[message.guild.id].settings.identity_attack && result[0].match) return true
-    if (memDB[message.guild.id].settings.insult && result[1].match) return true
-    if (memDB[message.guild.id].settings.obscene && result[2].match) return true
-    if (memDB[message.guild.id].settings.severe_toxicity && result[3].match) return true
-    if (memDB[message.guild.id].settings.sexual_explicit && result[4].match) return true
-    if (memDB[message.guild.id].settings.threat && result[5].match) return true
-    if (memDB[message.guild.id].settings.toxicity && result[6].match) return true
+    if (memDB[message.guild.id].settings.identity_attack && result[0].match ||
+        memDB[message.guild.id].settings.insult && result[1].match ||
+        memDB[message.guild.id].settings.obscene && result[2].match ||
+        memDB[message.guild.id].settings.severe_toxicity && result[3].match ||
+        memDB[message.guild.id].settings.sexual_explicit && result[4].match ||
+        memDB[message.guild.id].settings.threat && result[5].match ||
+        memDB[message.guild.id].settings.toxicity && result[6].match
+    ) return true
+
     return false
 }
 
