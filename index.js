@@ -24,7 +24,7 @@ db.close()
 
 // I'm using memDB so i don't have to access the db every time i have to check something
 // Arguably not the best solution but it works for now
-let memDB = {}
+const memDB = {}
 
 for (const row of stmt) {
     if (!Object.prototype.hasOwnProperty.call(memDB, row.serverID)) {
@@ -117,9 +117,6 @@ client.on("ready", () => {
                     db.prepare("DELETE FROM muted_users WHERE serverID = ? AND userID = ?").run(row.serverID, row.userID)
 
                     db.close()
-                } else {
-                    const message = {guild: {id: row.serverID}, author: {id: row.userID}, member: client.guilds.get(row.serverID).members.get(row.userID)}
-                    setTimeout(removeMute, row.duration - (new Date().getTime() - row.muted_at), message, row.mute_role).unref()
                 }
             } else {
                 const message = {guild: {id: row.serverID}, author: {id: row.userID}, member: client.guilds.get(row.serverID).members.get(row.userID)}
@@ -199,7 +196,7 @@ client.on("channelDelete", channel => {
     }
 })
 
-client.on("message", message => {
+client.on("message", async message => {
     if (message.author.bot || message.channel.type != "text") return
 
     if (message.content.startsWith(config.prefix)) {
@@ -218,27 +215,24 @@ client.on("message", message => {
 
     if (memDB[message.guild.id].settings.modRoleExempt && message.member.roles.has(memDB[message.guild.id].settings.modRole)) return
 
-    classifier(message, memDB)
-    .then(result => {
-        if (tagDelete(message, result)) {
-            punishment(message)
-        } else {
-            if (result[6].results.match) {
-                punishment(message)
-            }
-        }
-    })
-    .catch(console.error)
+    const result = await Promise.all(await classifier(message, memDB)).catch(console.error)
+    if (tagDelete(message, result)) {
+        punishment(message)
+    } else if (result[6].match) {
+        punishment(message)
+    }
 })
 
 function tagDelete(message, result) {
-    if (memDB[message.guild.id].settings.identity_attack && result[0].results.match) return true
-    if (memDB[message.guild.id].settings.insult && result[1].results.match) return true
-    if (memDB[message.guild.id].settings.obscene && result[2].results.match) return true
-    if (memDB[message.guild.id].settings.severe_toxicity && result[3].results.match) return true
-    if (memDB[message.guild.id].settings.sexual_explicit && result[4].results.match) return true
-    if (memDB[message.guild.id].settings.threat && result[5].results.match) return true
-    if (memDB[message.guild.id].settings.toxicity && result[6].results.match) return true
+    if (memDB[message.guild.id].settings.identity_attack && result[0].match ||
+        memDB[message.guild.id].settings.insult && result[1].match ||
+        memDB[message.guild.id].settings.obscene && result[2].match ||
+        memDB[message.guild.id].settings.severe_toxicity && result[3].match ||
+        memDB[message.guild.id].settings.sexual_explicit && result[4].match ||
+        memDB[message.guild.id].settings.threat && result[5].match ||
+        memDB[message.guild.id].settings.toxicity && result[6].match
+    ) return true
+    
     return false
 }
 

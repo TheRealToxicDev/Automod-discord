@@ -5,26 +5,24 @@ Massive thank you to tensorflow for open sourcing the code and letting us use it
 
 const tf = require("@tensorflow/tfjs-node")
 
-let model = async () => {
+let model = (async function() {
     console.log("Loading Toxicity Model")
-    const toxicity = await tf.loadGraphModel("https://storage.googleapis.com/tfjs-models/savedmodel/toxicity/model.json")
+    model = await tf.loadGraphModel("https://storage.googleapis.com/tfjs-models/savedmodel/toxicity/model.json")
     console.log("Loaded Toxicity Model")
-    model = toxicity
-}
+})()
 
-let tokenizer = async () => {
+let tokenizer = (function() {
     console.log("Loading USE Model")
-    let vocabulary = await tf.util.fetch("https://storage.googleapis.com/tfjs-models/savedmodel/universal_sentence_encoder/vocab.json")
-    vocabulary = vocabulary.json()
+    tf.util.fetch("https://storage.googleapis.com/tfjs-models/savedmodel/universal_sentence_encoder/vocab.json")
     .then(vocabulary => {
-        const tn = new Tokenizer(vocabulary)
-        tokenizer = tn
+        return vocabulary.json()
+    })
+    .then(vocabulary => {
+        tokenizer = new Tokenizer(vocabulary)
         console.log("Loaded USE Model")
     })
-}
-
-model()
-tokenizer()
+    .catch(console.error)
+})()
 
 class TrieNode {
     constructor(key) {
@@ -33,8 +31,9 @@ class TrieNode {
         this.children = {}
         this.end = false
     }
+
     getWord() {
-        let output = []
+        const output = []
         let node = this
         while (node !== null) {
             if (node.key !== null) {
@@ -50,10 +49,11 @@ class Trie {
     constructor() {
         this.root = new TrieNode(null)
     }
+
     findAllCommonPrefixes(ss, node, arr) {
         if (node.end) {
             const word = node.getWord()
-            if (ss.slice(0, word[0].length).join('') === word[0].join('')) {
+            if (ss.slice(0, word[0].length).join("") === word[0].join("")) {
                 arr.unshift(word)
             }
         }
@@ -61,6 +61,7 @@ class Trie {
             this.findAllCommonPrefixes(ss, node.children[child], arr)
         }
     }
+
     insert(word, score, index) {
         let node = this.root
         const symbols = stringToChars(word)
@@ -77,13 +78,13 @@ class Trie {
             }
         }
     }
+
     commonPrefixSearch(ss) {
         const node = this.root.children[ss[0]]
-        let output = []
+        const output = []
         if (node) {
             this.findAllCommonPrefixes(ss, node, output)
-        }
-        else {
+        } else {
             output.push([[ss[0]], 0, 0])
         }
         return output
@@ -91,7 +92,7 @@ class Trie {
 }
 
 function stringToChars(input) {
-    let symbols = []
+    const symbols = []
     for (let i = 0; i < input.length; i++) {
         symbols.push(input[i])
     }
@@ -99,8 +100,7 @@ function stringToChars(input) {
 }
 
 function processInput(input) {
-    const normalized = input.normalize('NFKC')
-    return "\u2581" + normalized.replace(/ /g, "\u2581")
+    return "\u2581" + input.normalize("NFKC").replace(/ /g, "\u2581")
 }
 
 class Tokenizer {
@@ -111,10 +111,11 @@ class Tokenizer {
             this.trie.insert(this.vocabulary[i][0], this.vocabulary[i][1], i)
         }
     }
+
     encode(input) {
-        let nodes = []
-        let words = []
-        let best = []
+        const nodes = []
+        const words = []
+        const best = []
         input = processInput(input)
         const symbols = stringToChars(input)
         for (let i = 0; i <= symbols.length; i++) {
@@ -147,13 +148,13 @@ class Tokenizer {
                 }
             }
         }
-        let results = []
+        const results = []
         let iter = words.length - 1
         while (iter > 0) {
             results.push(words[iter])
             iter -= this.vocabulary[words[iter]][0].length
         }
-        let merged = []
+        const merged = []
         let isPreviousUnk = false
         for (let i = 0; i < results.length; i++) {
             const id = results[i]
@@ -167,37 +168,26 @@ class Tokenizer {
 }
 
 module.exports = (message, memDB) => {
-    const result = new Promise(async (resolve, reject) => {
-        const a = {}
-        a.labels = model.outputs.map(function (d) { return d.name.split('/')[0] })
-        a.toxicityLabels = a.labels
-
-        const inputs = [message.content]
-        const encodings = inputs.map((d) => { return tokenizer.encode(d) })
-        const indicesArr = encodings.map((arr, i) => { return arr.map((d, index) => { return [i, index] }) })
-        let flattenedIndicesArr = []
-        for (let i = 0; i < indicesArr.length; i++) {
-            flattenedIndicesArr = flattenedIndicesArr.concat(indicesArr[i])
-        }
-        const indices = tf.tensor2d(flattenedIndicesArr, [flattenedIndicesArr.length, 2], 'int32')
-        const values = tf.tensor1d(tf.util.flatten(encodings), 'int32')
-        const labels = await model.executeAsync({ Placeholder_1: indices, Placeholder: values }).catch(err => reject(err))
+    return new Promise(async (resolve, reject) => {
+        const a = { labels: model.outputs.map(d => { return d.name.split("/")[0] }) }
+        const encodings = [tokenizer.encode(message.content)]
+        const indicesArr = [encodings[0].map((d, index) => { return [0, index] })]
+        const indices = tf.tensor2d(indicesArr[0], [indicesArr[0].length, 2], "int32")
+        const values = tf.tensor1d(tf.util.flatten(encodings), "int32")
+        const labels = await model.executeAsync({ Placeholder_1: indices, Placeholder: values })
         indices.dispose()
         values.dispose()
-
-        const result = labels.map((d, i) => { return ({ data: d, headIndex: i }) })
-            .filter((d) => { return a.toxicityLabels.indexOf(a.labels[d.headIndex]) > -1
-        }).map((d) => {
-            const prediction = d.data.dataSync()
-            const threshold = memDB[message.guild.id].settings.threshold
+        
+        const result = labels.map((d, i) => { return { data: d, headIndex: i } })
+        .map(async d => {
             let match = false
-            if (Math.max(prediction[0], prediction[1]) > threshold) {
+            const prediction = await d.data.data()
+            if (Math.max(prediction[0], prediction[1]) > memDB[message.guild.id].settings.threshold) {
                 match = prediction[0] < prediction[1]
             }
-            return { label: a.labels[d.headIndex], results: { probabilities: prediction, match: match } }
+            return { label: a.labels[d.headIndex], probabilities: prediction, match: match }
         })
+        
         resolve(result)
     })
-
-    return result
 }

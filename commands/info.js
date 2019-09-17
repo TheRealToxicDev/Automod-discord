@@ -9,7 +9,7 @@ module.exports = {
         if (hasModrole(message, memDB) || message.author.id == message.guild.ownerID) {
             if (args[0]) {
                 if (args[0] == "reset") {
-                    const userMentioned = /(<@[0-9]+>)|(<@![0-9]+>)/.test(args[1])
+                    const userMentioned = /(?<nameMention><@[0-9]+>)|(?<nicknameMention><@![0-9]+>)/.test(args[1])
 
                     if (message.mentions.users > 1) {
                         return message.channel.send("You can only reset info on one user.").catch(console.error)
@@ -78,7 +78,7 @@ module.exports = {
                         }
                     }
                 } else {
-                    const userMentioned = /(<@[0-9]+>)|(<@![0-9]+>)/.test(args[0])
+                    const userMentioned = /(?<nameMention><@[0-9]+>)|(?<nicknameMention><@![0-9]+>)/.test(args[0])
 
                     if (message.mentions.users > 1) {
                         return message.channel.send("You can only get info on one user.").catch(console.error)

@@ -10,7 +10,7 @@ module.exports = {
         message.channel.send(info)
         .catch(console.error)
 
-        cooldown.set(message.author.id)
+        cooldown.set(message.author.id, null)
 
         setTimeout(() => {
             cooldown.delete(message.author.id)
