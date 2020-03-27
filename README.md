@@ -14,8 +14,8 @@ The bot is highly configurable. You can specify what punishment a user should re
 
 ## Errors
 
-#####I'm getting errors related to tfjs-node
-Please try to remove special characters like `-` or ` ` (space) from your directory path before making an issue.
+##### I'm getting errors related to tfjs-node
+Please try to remove special characters like `-` or ` ` (space) from your directory path and rebuild before making an issue.
 
 ## Hosting
 
@@ -26,9 +26,12 @@ If you want to host this bot follow the instructions below.
 3. Invite the bot to your server
 4. Add your token to the config.json file
 5. Install [Node.js](https://nodejs.org/en/download/current/)
-6. Install discord.js, better-sqlite3 and @tensorflow/tfjs-node packages
+6. Run `npm install` in the directory the bot is saved in
+7. Start the bot with `node index.js`
 
 If you don't know how to create a bot account, invite the bot to your server or where to get your token please follow this [Discord Bot 101 Guide](https://www.digitaltrends.com/gaming/how-to-make-a-discord-bot/) until step 4.
+
+It's probably also a good idea to use [pm2](https://pm2.keymetrics.io/) with this.
 
 You should be good to go now. If you like you can use the profile picture i made for the bot. [Profile picture](./automod_profile_picture.png)
 
@@ -42,19 +45,21 @@ Average processing time of a message. Calculated from 10 samples.
 |  100 characters   |    203 ms      |      1497 ms     |
 |  1000 characters  |    1810 ms     |      12947 ms    |
 
+*This table isn't completely correct anymore. The performance has increased a bit.*
+
 As you can see it takes quite long especially for longer messages. If you host the bot make sure that it's not on too many servers or otherwise the bot could start lagging behind.
 
 Note: If the bot starts lagging behind it wont skip messages. It will still check every message one after the other.
 
 ## Commands
 
-### Everyone:
+#### Everyone:
 
 > !am help
 
 Shows this message
 
-### Owner + Mods:
+#### Owner + Mods:
 
 > !am enable
 
