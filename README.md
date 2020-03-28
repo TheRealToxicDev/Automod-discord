@@ -14,7 +14,7 @@ The bot is highly configurable. You can specify what punishment a user should re
 
 ## Errors
 
-##### I'm getting errors related to tfjs-node
+#### I'm getting errors related to tfjs-node
 Please try to remove special characters like `-` or ` ` (space) from your directory path and rebuild before making an issue.
 
 ## Hosting
