@@ -75,7 +75,7 @@ client.on("ready", () => {
     const db = new Database("am.db", { fileMustExist: true });
 
     // This makes sure that we create objects for servers which were joined while the bot was off
-    client.guilds.forEach(guild => {
+    client.guilds.cache.forEach(guild => {
         if (!Object.prototype.hasOwnProperty.call(memDB, guild.id)) {
             memDB[guild.id] = { user_data: {}, user_data_internal: {} };
             memDB[guild.id].settings = { threshold: 0.85, modRole: null, modRoleExempt: false, loggingChannel: null, muteRole: null, muteDuration: 0, deleted: 0, temp_mute: null, kick: null, softban: null, ban: null, identity_attack: false, insult: false, obscene: false, severe_toxicity: false, sexual_explicit: false, threat: false, toxicity: false };
@@ -86,7 +86,7 @@ client.on("ready", () => {
 
     // This deletes all servers that the bot left while offline
     for (const guild in memDB) {
-        if (!client.guilds.has(guild)) {
+        if (!client.guilds.cache.has(guild)) {
             delete memDB[guild];
 
             db.prepare("DELETE FROM data WHERE serverID = ?").run(guild.id);
@@ -104,10 +104,10 @@ client.on("ready", () => {
     if (muted_users.length) {
         for (const row of muted_users) {
             const elapsed_time = new Date().getTime() - row.muted_at;
-            const member = client.guilds.get(row.serverID).members.get(row.userID);
+            const member = client.guilds.cache.get(row.serverID).members.cache.get(row.userID);
             if (elapsed_time >= row.duration) {
                 if (member) {
-                    member.removeRole(row.mute_role).catch(console.error);
+                    member.roles.remove(row.mute_role).catch(console.error);
                 }
 
                 db.prepare("DELETE FROM muted_users WHERE serverID = ? AND userID = ?").run(row.serverID, row.userID);
@@ -126,55 +126,63 @@ client.on("ready", () => {
 });
 
 client.on("roleDelete", role => {
+    const guild_id = role.guild.id;
+
     // This sets mod roles or mute roles back to null if they get deleted to make sure we don't have old data in the db
-    if (memDB[role.guild.id].settings.modRole == role.id) {
-        memDB[role.guild.id].settings.modRole = null;
+    if (memDB[guild_id].settings.modRole == role.id) {
+        memDB[guild_id].settings.modRole = null;
 
         const db = new Database("am.db", { fileMustExist: true });
-        db.prepare("UPDATE server_settings SET modRole = ? WHERE serverID = ?").run(null, role.guild.id);
+        db.prepare("UPDATE server_settings SET modRole = ? WHERE serverID = ?").run(null, guild_id);
         db.close();
     }
 
-    if (memDB[role.guild.id].settings.muteRole == role.id) {
-        memDB[role.guild.id].settings.muteRole = null;
+    if (memDB[guild_id].settings.muteRole == role.id) {
+        memDB[guild_id].settings.muteRole = null;
 
         const db = new Database("am.db", { fileMustExist: true });
-        db.prepare("UPDATE server_settings SET muteRole = ? WHERE serverID = ?").run(null, role.guild.id);
+        db.prepare("UPDATE server_settings SET muteRole = ? WHERE serverID = ?").run(null, guild_id);
         db.close();
     }
 });
 
 client.on("guildCreate", guild => {
-    memDB[guild.id] = { settings: { threshold: 0.85, modRole: null, modRoleExempt: false, loggingChannel: null, muteRole: null, muteDuration: 0, deleted: 0, temp_mute: null, kick: null, softban: null, ban: null, identity_attack: false, insult: false, obscene: false, severe_toxicity: false, sexual_explicit: false, threat: false, toxicity: false } };
+    const guild_id = guild.id;
+
+    memDB[guild_id] = { settings: { threshold: 0.85, modRole: null, modRoleExempt: false, loggingChannel: null, muteRole: null, muteDuration: 0, deleted: 0, temp_mute: null, kick: null, softban: null, ban: null, identity_attack: false, insult: false, obscene: false, severe_toxicity: false, sexual_explicit: false, threat: false, toxicity: false } };
 
     const db = new Database("am.db", { fileMustExist: true });
-    db.prepare("INSERT INTO server_settings (serverID) VALUES (?)").run(guild.id);
+    db.prepare("INSERT INTO server_settings (serverID) VALUES (?)").run(guild_id);
     db.close();
 });
 
 client.on("guildDelete", guild => {
-    delete memDB[guild.id];
+    const guild_id = guild.id;
+
+    delete memDB[guild_id];
 
     const db = new Database("am.db", { fileMustExist: true });
-    db.prepare("DELETE FROM data WHERE serverID = ?").run(guild.id);
-    db.prepare("DELETE FROM server_settings WHERE serverID = ?").run(guild.id);
-    db.prepare("DELETE FROM muted_users WHERE serverID = ?").run(guild.id);
-    db.prepare("DELETE FROM user_data WHERE serverID = ?").run(guild.id);
-    db.prepare("DELETE FROM user_data_internal WHERE serverID = ?").run(guild.id);
+    db.prepare("DELETE FROM data WHERE serverID = ?").run(guild_id);
+    db.prepare("DELETE FROM server_settings WHERE serverID = ?").run(guild_id);
+    db.prepare("DELETE FROM muted_users WHERE serverID = ?").run(guild_id);
+    db.prepare("DELETE FROM user_data WHERE serverID = ?").run(guild_id);
+    db.prepare("DELETE FROM user_data_internal WHERE serverID = ?").run(guild_id);
     db.close();
 });
 
 client.on("channelDelete", channel => {
+    const channel_id = channel.id;
+
     for (const server in memDB) {
-        if (Object.prototype.hasOwnProperty.call(memDB[server], channel.id)) {
-            delete memDB[server][channel.id];
+        if (Object.prototype.hasOwnProperty.call(memDB[server], channel_id)) {
+            delete memDB[server][channel_id];
 
             const db = new Database("am.db", { fileMustExist: true });
-            db.prepare("DELETE FROM data WHERE serverID = ? AND channelID = ?").run(server, channel.id);
+            db.prepare("DELETE FROM data WHERE serverID = ? AND channelID = ?").run(server, channel_id);
             db.close();
         }
 
-        if (memDB[server].settings.loggingChannel == channel.id) {
+        if (memDB[server].settings.loggingChannel == channel_id) {
             memDB[server].settings.loggingChannel = null;
 
             const db = new Database("am.db", { fileMustExist: true });
@@ -208,7 +216,7 @@ client.on("message", async message => {
 
     if (!guild[channel_id]?.am_enabled) return;
 
-    if (guild.settings.modRoleExempt && message.member.roles.has(guild.settings.modRole)) return;
+    if (guild.settings.modRoleExempt && message.member.roles.cache.has(guild.settings.modRole)) return;
 
     Promise.all(await classifier(message, memDB))
     .then(result => {
@@ -265,8 +273,7 @@ function punishment(message) {
     const user_data_internal = guild.user_data_internal[author_id];
 
     if (guild_settings.deleted != null && user_data_internal.deleted >= guild_settings.deleted) {
-        message.delete()
-        .catch(console.error);
+        message.delete().catch(console.error);
         
         user_data.deleted++;
         user_data_internal.deleted = 0;
@@ -275,17 +282,16 @@ function punishment(message) {
         db.prepare("UPDATE user_data_internal SET deleted = ? WHERE serverID = ? AND userID = ?").run(user_data_internal.deleted, guild_id, author_id);
 
         if (guild_settings.loggingChannel) {
-            client.channels.get(guild_settings.loggingChannel).send(new Discord.RichEmbed()
+            message.guild.channels.cache.get(guild_settings.loggingChannel).send(new Discord.MessageEmbed()
                 .setColor("#0099ff")
-                .setDescription("Deleted a message from <@" + author_id + "> in <#" + message.channel.id +">\n" + new Date().toUTCString())
-            );
+                .setDescription(`Deleted a message from <@${author_id}> in <#${message.channel.id}>\n${new Date().toUTCString()}`)
+            ).catch(console.error);
         }
     }
 
     if (guild_settings.temp_mute != null && user_data_internal.temp_mute >= guild_settings.temp_mute) {
-        if (!message.member.roles.has(guild_settings.muteRole)) {
-            message.member.addRole(guild_settings.muteRole)
-            .catch(console.error);
+        if (!message.member.roles.cache.has(guild_settings.muteRole)) {
+            message.member.roles.add(guild_settings.muteRole).catch(console.error);
 
             setTimeout(removeMute, guild_settings.muteDuration, message, guild_settings.muteRole).unref();
 
@@ -297,17 +303,16 @@ function punishment(message) {
             db.prepare("UPDATE user_data_internal SET temp_mute = ? WHERE serverID = ? AND userID = ?").run(user_data_internal.temp_mute, guild_id, author_id);
 
             if (guild_settings.loggingChannel) {
-                client.channels.get(guild_settings.loggingChannel).send(new Discord.RichEmbed()
+                message.guild.channels.cache.get(guild_settings.loggingChannel).send(new Discord.MessageEmbed()
                     .setColor("#0099ff")
-                    .setDescription("Muted <@" + author_id + "> for " + guild_settings.muteDuration / 1000 + " Seconds\n" + new Date().toUTCString())
-                );
+                    .setDescription(`Muted <@${author_id}> for ${guild_settings.muteDuration / 1000} Seconds\n${new Date().toUTCString()}`)
+                ).catch(console.error);
             }
         }
     }
 
     if (guild_settings.kick != null && user_data_internal.kick >= guild_settings.kick) {
-        message.member.kick()
-        .catch(console.error);
+        message.member.kick().catch(console.error);
 
         user_data.kick++;
         user_data_internal.kick = 0;
@@ -316,16 +321,16 @@ function punishment(message) {
         db.prepare("UPDATE user_data_internal SET kick = ? WHERE serverID = ? AND userID = ?").run(user_data_internal.kick, guild_id, author_id);
 
         if (guild_settings.loggingChannel) {
-            client.channels.get(guild_settings.loggingChannel).send(new Discord.RichEmbed()
+            message.guild.channels.cache.get(guild_settings.loggingChannel).send(new Discord.MessageEmbed()
                 .setColor("#0099ff")
-                .setDescription("Kicked <@" + author_id + ">\n" + new Date().toUTCString())
-            );
+                .setDescription(`Kicked <@"${author_id}>\n${new Date().toUTCString()}`)
+            ).catch(console.error);
         }
     }
 
     if (guild_settings.softban != null && user_data_internal.softban >= guild_settings.softban) {
-        message.member.ban(7)
-        .then(() => message.guild.unban(author_id))
+        message.member.ban({ days: 7 })
+        .then(() => client.guilds.cache.get(guild_id).members.unban(author_id))
         .catch(console.error);
 
         user_data.softban++;
@@ -335,16 +340,15 @@ function punishment(message) {
         db.prepare("UPDATE user_data_internal SET softban = ? WHERE serverID = ? AND userID = ?").run(user_data_internal.softban, guild_id, author_id);
 
         if (guild_settings.loggingChannel) {
-            client.channels.get(guild_settings.loggingChannel).send(new Discord.RichEmbed()
+            message.guild.channels.cache.get(guild_settings.loggingChannel).send(new Discord.MessageEmbed()
                 .setColor("#0099ff")
-                .setDescription("Softbanned <@" + author_id + ">\n" + new Date().toUTCString())
-            );
+                .setDescription(`Softbanned <@${author_id}>\n${new Date().toUTCString()}`)
+            ).catch(console.error);
         }
     }
 
     if (guild_settings.ban != null && user_data_internal.ban >= guild_settings.ban) {
-        message.member.ban()
-        .catch(console.error);
+        message.member.ban({ days: 7 }).catch(console.error);
 
         user_data.ban++;
         user_data_internal.ban = 0;
@@ -353,10 +357,10 @@ function punishment(message) {
         db.prepare("UPDATE user_data_internal SET ban = ? WHERE serverID = ? AND userID = ?").run(user_data_internal.ban, guild_id, author_id);
 
         if (guild_settings.loggingChannel) {
-            client.channels.get(guild_settings.loggingChannel).send(new Discord.RichEmbed()
+            message.guild.channels.cache.get(guild_settings.loggingChannel).send(new Discord.MessageEmbed()
                 .setColor("#0099ff")
-                .setDescription("Banned <@" + author_id + ">\n" + new Date().toUTCString())
-            );
+                .setDescription(`Banned <@${author_id}>\n"${new Date().toUTCString()}`)
+            ).catch(console.error);
         }
     }
 
@@ -364,7 +368,7 @@ function punishment(message) {
 }
 
 function removeMute(message, muteRole) {
-    message.member.removeRole(muteRole).catch(console.error);
+    message.member.roles.remove(muteRole).catch(console.error);
 
     const db = new Database("am.db", { fileMustExist: true });
     db.prepare("DELETE FROM muted_users WHERE serverID = ? AND userID = ?").run(message.guild.id, message.author.id);

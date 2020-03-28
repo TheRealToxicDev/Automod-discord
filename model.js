@@ -6,10 +6,13 @@ Massive thank you to tensorflow for open sourcing the code and letting us use it
 const tf = require("@tensorflow/tfjs");
 require("@tensorflow/tfjs-node");
 
-let model = (async function() {
+let model = (function() {
     console.log("Loading Toxicity Model");
-    model = await tf.loadGraphModel("https://storage.googleapis.com/tfjs-models/savedmodel/toxicity/model.json");
-    console.log("Loaded Toxicity Model");
+    tf.loadGraphModel("https://storage.googleapis.com/tfjs-models/savedmodel/toxicity/model.json")
+    .then(graphModel => {
+        model = graphModel;
+        console.log("Loaded Toxicity Model");
+    });
 })();
 
 let tokenizer = (function() {

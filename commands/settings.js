@@ -1,5 +1,5 @@
 function hasModrole(message, memDB) {
-    if (message.member.roles.has(memDB[message.guild.id].settings.modRole)) return true;
+    if (message.member.roles.cache.has(memDB[message.guild.id].settings.modRole)) return true;
     return false;
 }
 
@@ -8,7 +8,7 @@ module.exports = {
     // eslint-disable-next-line complexity
     execute(memDB, Database, Discord, message, args) {
         if (!hasModrole(message, memDB) && message.author.id != message.guild.ownerID) {
-            message.channel.send("<@" + message.author.id + "> You don't have permission to use this command.").catch(console.error);
+            message.channel.send(`<@${message.author.id}> You don't have permission to use this command.`).catch(console.error);
             return;
         }
 
@@ -17,11 +17,9 @@ module.exports = {
 
             if (!args[1]) {
                 if (modrole) {
-                    message.channel.send("Modrole is <@&" + modrole + ">")
-                    .catch(console.error);
+                    message.channel.send(`Modrole is <@&${modrole}>`).catch(console.error);
                 } else {
-                    message.channel.send("Modrole has not been set.")
-                    .catch(console.error);
+                    message.channel.send("Modrole has not been set.").catch(console.error);
                 }
 
                 return;
@@ -69,7 +67,7 @@ module.exports = {
 
                     const word = args[2] == "true" ? "" : " not";
 
-                    message.channel.send("Modrole is now" + word + " exempt from punishment").catch(console.error);
+                    message.channel.send(`Modrole is now${word} exempt from punishment`).catch(console.error);
                     return;
                 }
 
@@ -98,7 +96,7 @@ module.exports = {
             const threshold = memDB[message.guild.id].settings.threshold;
 
             if (!args[1]) {
-                message.channel.send("Threshold is at " + threshold * 100 + "%.").catch(console.error);
+                message.channel.send(`Threshold is at ${threshold * 100}%.`).catch(console.error);
                 return;
             }
 
@@ -110,7 +108,7 @@ module.exports = {
             const newThreshold = args[1] / 100;
 
             if (newThreshold == threshold) {
-                message.channel.send("The threshold is already at " + args[1] + "%.").catch(console.error);
+                message.channel.send(`The threshold is already at ${args[1]}%.`).catch(console.error);
                 return;
             }
 
@@ -120,12 +118,12 @@ module.exports = {
             db.prepare("UPDATE server_settings SET threshold = ? WHERE serverID = ?").run(newThreshold, message.guild.id);
             db.close();
 
-            message.channel.send("The threshold has been set to " + args[1] + "%.").catch(console.error);
+            message.channel.send(`The threshold has been set to ${args[1]}%.`).catch(console.error);
         } else if (args[0] == "tags") {
             if (!args[1]) {
                 const settings = memDB[message.guild.id].settings;
 
-                message.channel.send(new Discord.RichEmbed()
+                message.channel.send(new Discord.MessageEmbed()
                     .setColor("#0099ff")
                     .setTitle("Tags")
                     .addField("Identity attack", settings.identity_attack ? "true" : "false")
@@ -163,7 +161,7 @@ module.exports = {
 
             if (!args[1]) {
                 if (memDB[guild_id].settings.loggingChannel) {
-                    message.channel.send("Logging channel is <#" + loggingChannel + ">").catch(console.error);
+                    message.channel.send(`Logging channel is <#${loggingChannel}>`).catch(console.error);
                 } else {
                     message.channel.send("Logging channel is not set.").catch(console.error);
                 }
@@ -210,7 +208,7 @@ module.exports = {
             const settings = memDB[guild_id].settings;
 
             if (!args[1]) {
-                message.channel.send(new Discord.RichEmbed()
+                message.channel.send(new Discord.MessageEmbed()
                     .setColor("#0099ff")
                     .setTitle("Values")
                     .addField("Delete", settings.deleted != null ? settings.deleted : "off")
@@ -243,18 +241,16 @@ module.exports = {
                 memDB[guild_id].settings[value] = value2;
 
                 const db = new Database("am.db", { fileMustExist: true });
-                db.prepare("UPDATE server_settings SET " + value + " = ? WHERE serverID = ?").run(value2, guild_id);
+                db.prepare(`UPDATE server_settings SET ${value} = ? WHERE serverID = ?`).run(value2, guild_id);
                 db.close();
 
                 if (!value2) {
-                    message.channel.send(args[1] + " has been set to off")
-                    .catch(console.error);
+                    message.channel.send(args[1] + " has been set to off").catch(console.error);
                 } else {
-                    message.channel.send(args[1] + " has been set to " + args[2] + " make sure that the bot has the right permissions or nothing will happen (even though it will still log that it did it).")
-                    .catch(console.error);
+                    message.channel.send(args[1] + " has been set to " + args[2] + " make sure that the bot has the right permissions or nothing will happen (even though it will still log that it did it).").catch(console.error);
                 }
             } else {
-                message.channel.send(new Discord.RichEmbed()
+                message.channel.send(new Discord.MessageEmbed()
                     .setColor("#0099ff")
                     .setDescription("Possible values:\n`delete`\n`temp_mute`\n`kick`\n`softban`\n`ban`")
                 ).catch(console.error);
@@ -265,7 +261,7 @@ module.exports = {
 
             if (!args[1]) {
                 if (settings.muteRole) {
-                    message.channel.send("Mute role is <@&" + settings.muteRole + ">").catch(console.error);
+                    message.channel.send(`Mute role is <@&${settings.muteRole}>`).catch(console.error);
                 } else {
                     message.channel.send("Mute role has not been set.").catch(console.error);
                 }
@@ -289,7 +285,7 @@ module.exports = {
             db.prepare("UPDATE server_settings SET muteRole = ? WHERE serverID = ?").run(id, guild_id);
             db.close();
 
-            message.channel.send("Mute role has been set to " + args[1]).catch(console.error);
+            message.channel.send(`Mute role has been set to ${args[1]}`).catch(console.error);
         } else if (args[0] == "muteduration") {
             const guild_id = message.guild.id;
             const settings = memDB[guild_id].settings;
@@ -298,7 +294,7 @@ module.exports = {
                 if (settings.muteDuration == 0) {
                     message.channel.send("Mute duration has not been set.").catch(console.error);
                 } else {
-                    message.channel.send("Mute duration is " + settings.muteDuration / 1000 + " seconds.").catch(console.error);
+                    message.channel.send(`Mute duration is ${settings.muteDuration / 1000} seconds.`).catch(console.error);
                 }
 
                 return;
@@ -315,7 +311,7 @@ module.exports = {
             db.prepare("UPDATE server_settings SET muteDuration = ? WHERE serverID = ?").run(args[1] * 1000, guild_id);
             db.close();
 
-            message.channel.send("Mute duration has been set to " + args[1] + " seconds.").catch(console.error);
+            message.channel.send(`Mute duration has been set to ${args[1]} seconds.`).catch(console.error);
         }
     }
 };

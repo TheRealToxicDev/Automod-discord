@@ -1,5 +1,5 @@
 function hasModrole(message, memDB) {
-    if (message.member.roles.has(memDB[message.guild.id].settings.modRole)) return true;
+    if (message.member.roles.cache.has(memDB[message.guild.id].settings.modRole)) return true;
     return false;
 }
 
@@ -7,7 +7,7 @@ module.exports = {
     name: "disable",
     execute(memDB, Database, Discord, message) {
         if (!hasModrole(message, memDB) && message.author.id != message.guild.ownerID) {
-            message.channel.send("<@" + message.author.id + "> You don't have permission to use this command.").catch(console.error);
+            message.channel.send(`<@${message.author.id}> You don't have permission to use this command.`).catch(console.error);
             return;
         }
 

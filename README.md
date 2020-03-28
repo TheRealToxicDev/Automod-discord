@@ -27,7 +27,7 @@ If you want to host this bot follow the instructions below.
 4. Add your token to the config.json file
 5. Install [Node.js](https://nodejs.org/en/download/current/)
 6. Run `npm install` in the directory the bot is saved in
-7. Start the bot with `node index.js`
+7. Start the bot with `node --harmony index.js`
 
 If you don't know how to create a bot account, invite the bot to your server or where to get your token please follow this [Discord Bot 101 Guide](https://www.digitaltrends.com/gaming/how-to-make-a-discord-bot/) until step 4.
 

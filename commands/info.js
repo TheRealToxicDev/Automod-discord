@@ -1,5 +1,5 @@
 function hasModrole(message, memDB) {
-    if (message.member.roles.has(memDB[message.guild.id].settings.modRole)) return true;
+    if (message.member.roles.cache.has(memDB[message.guild.id].settings.modRole)) return true;
     return false;
 }
 
@@ -7,7 +7,7 @@ module.exports = {
     name: "info",
     execute(memDB, Database, Discord, message, args) {
         if (!hasModrole(message, memDB) && message.author.id != message.guild.ownerID) {
-            message.channel.send("<@" + message.author.id + "> You don't have permission to use this command.").catch(console.error);
+            message.channel.send(`<@${message.author.id}> You don't have permission to use this command.`).catch(console.error);
             return;
         }
 
@@ -54,7 +54,7 @@ module.exports = {
                     db.prepare("UPDATE user_data_internal SET deleted = ?, temp_mute = ?, kick = ?, softban = ?, ban = ? WHERE serverID = ? AND userID = ?").run(0, 0, 0, 0, 0, message.guild.id, user);
                     db.close();
 
-                    message.channel.send("Reset info of " + args[1]).catch(console.error);
+                    message.channel.send(`Reset info of ${args[1]}`).catch(console.error);
                 } else {
                     message.channel.send("I have no information about this user. The user is either not on this server or has no infractions.").catch(console.error);
                 }
@@ -82,7 +82,7 @@ module.exports = {
                     db.prepare("UPDATE user_data_internal SET deleted = ?, temp_mute = ?, kick = ?, softban = ?, ban = ? WHERE serverID = ? AND userID = ?").run(0, 0, 0, 0, 0, message.guild.id, args[2]);
                     db.close();
 
-                    message.channel.send("Reset info of " + args[1]).catch(console.error);
+                    message.channel.send(`Reset info of ${args[1]}`).catch(console.error);
                 } else {
                     message.channel.send("I have no information about this user. The user is either not on this server or has no infractions.").catch(console.error);
                 }
@@ -105,7 +105,7 @@ module.exports = {
                 const user_data = memDB[message.guild.id].user_data[user];
 
                 if (user_data) {
-                    message.channel.send(new Discord.RichEmbed()
+                    message.channel.send(new Discord.MessageEmbed()
                         .setColor("#0099ff")
                         .setTitle("User data")
                         .setDescription("User id: " + user)
@@ -123,7 +123,7 @@ module.exports = {
                 const user_data = memDB[message.guild.id].user_data[args[0]];
 
                 if (user_data) {
-                    message.channel.send(new Discord.RichEmbed()
+                    message.channel.send(new Discord.MessageEmbed()
                         .setColor("#0099ff")
                         .setTitle("User data")
                         .setDescription("User id: " + args[0])
